@@ -1,0 +1,133 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us">
+<head>
+	<link href="./main.css" rel="stylesheet" type="text/css"> 
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> 
+	<script type="text/javascript" src="./jquery.min.js"></script>
+	<script type="text/javascript">
+	</script>
+</head>
+<body>
+<h1>
+Cheesecave!!!
+</h1>
+<div id='temp'>
+Current Temp: <span id='temp_current'></span><br>
+Setpoint:<span class='setpoint'></span>
+</div>
+<div id='humidity'>
+Current Humidity: <span id='humidity_current'></span><br>
+Setpoint:<span class='setpoint'></span>
+<div id='image'>
+Last Image:
+<div id='curImage'>
+<img src="cheesecave/snapshot"/>
+</div>
+<input type="button">Refresh Image</input>
+</div>
+
+</body>
+<script>
+$(document).ready(function() {
+	getHumidity();
+	getTemperature();
+	getHumiditySetpoint();
+	getTemperatureSetpoint();
+	// getCaveStats();
+	// XXX need to set up image
+});
+
+function getCaveStats()
+{
+}
+
+function getHumidity()
+{
+	$.ajax({
+		type: 'GET',
+		url:"/cheesecave/humidity",
+		success: function(data, status, req) {
+			if (data != "") {
+				console.log("data is " + data);
+				$("#humidity_current").html(data[0]);
+				//var humidity = $.parseJSON(data);
+			} else {
+				console.log("No data");
+			}
+				
+		},
+		error: function(req,status,errorThrown) {
+			printError("humidity get", req, status, errorThrown);
+		}
+	});
+}
+
+function getTemperature()
+{
+		$.ajax({
+		type: 'GET',
+		url:"/cheesecave/temp",
+		success: function(data, status, req) {
+			if (data != "") {
+				$("#temp_current").html(data[0]);
+				//var humidity = $.parseJSON(data);
+			} else {
+				console.log("No data");
+			}
+				
+		},
+		error: function(req,status,errorThrown) {
+			printError("temp get", req, status, errorThrown);
+		}
+	});
+
+}
+
+function getHumiditySetpoint()
+{
+	$.ajax({
+		type: 'GET',
+		url:"/cheesecave/desired_humidity",
+		success: function(data, status, req) {
+			if (data != "") {
+				$("#humidity .setpoint").html(data[0]);
+				//var humidity = $.parseJSON(data);
+			} else {
+				console.log("No data");
+			}
+				
+		},
+		error: function(req,status,errorThrown) {
+			printError("humidity get setpoint", req, status, errorThrown);
+		}
+	});
+}
+
+function getTemperatureSetpoint()
+{
+	$.ajax({
+		type: 'GET',
+		url:"/cheesecave/desired_temp",
+		success: function(data, status, req) {
+			if (data != "") {
+				$("#temp .setpoint").html(data[0]);
+				//var humidity = $.parseJSON(data);
+			} else {
+				console.log("No data");
+			}
+				
+		},
+		error: function(req,status,errorThrown) {
+			printError("temp get setpoint", req, status, errorThrown);
+		}
+	});
+}
+
+function printError(origin, req, status, errorThrown)
+{
+	console.log(origin + " throws error "+ errorThrown);
+}
+
+
+</script>
+</html>
