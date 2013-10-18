@@ -15,14 +15,22 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <unistd.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <time.h>
 #include <bcm2835.h>
+#include <unistd.h>
 
 #define MAXTIMINGS 100
 
 //#define DEBUG
-/*
+
 #define DHT11 11
 #define DHT22 22
 #define AM2302 22
@@ -111,58 +119,36 @@ int readDHT(int type, int pin) {
 
   return 0;
 }
-*/
-
-void printUsage(const char *name)
-{
-    printf("usage: %s [on|off|state] <pin>\n", name);
-    printf("<pin> defaults to 17 (GPIO17) if not specified.\n");
-    printf("Allowed <pin> values are 4, 17-18, 22-25, and 27\n");
-}
 
 int main(int argc, char **argv)
 {
-  int gpioPin = 17;
-  if (!bcm2835_init()){
-  	printf("broadcom GPIO chip could not be initialized, bailing\n");
+  if (!bcm2835_init())
     return 1;
-  }
 
-  // check for 'on' or 'off' or 'state'
-  if (argc < 2 || !(!strcmp(argv[1], "on") || !strcmp(argv[1], "off") || !strcmp(argv[1], "state"))) {
-    printUsage(argv[0]);
+  if (argc != 3) {
+    printf("usage: %s [11|22|2302] GPIOpin#\n", argv[0]);
+    printf("example: %s 2302 4 - Read from an AM2302 connected to GPIO #4\n", argv[0]);
     return 2;
   }
+
+  int type = 0;
+  if (strcmp(argv[1], "11") == 0) type = DHT11;
+  if (strcmp(argv[1], "22") == 0) type = DHT22;
+  if (strcmp(argv[1], "2302") == 0) type = AM2302;
+  if (type == 0) {
+    printf("Select 11, 22, 2302 as type!\n");
+    return 3;
+  }
   
-  // If there's a third argument, it better be a valid number
-  if (argc >=3 ){
-  	gpioPin = atoi(argv[2]);
-  	if (gpioPin != 4 && gpioPin != 17 && gpioPin != 18 && 
-  		!(gpioPin >= 22 && gpioPin <=25) && 
-  		gpioPin != 27) {
-  		printUsage(argv[0]);
-  		return 2;
-  	}
+  int dhtpin = atoi(argv[2]);
+
+  if (dhtpin <= 0) {
+    printf("Please select a valid GPIO pin #\n");
+    return 3;
   }
 
-  //printf("Using pin #%d\n", gpioPin);
-
-  if (!strcmp(argv[1], "on")) {
-  	printf("Setting pin HIGH\n");
-	bcm2835_gpio_fsel(gpioPin, BCM2835_GPIO_FSEL_OUTP);
-  	bcm2835_gpio_write(gpioPin, HIGH);
-  } else if (!strcmp(argv[1], "off")) {
-	printf("Setting pin LOW\n");
-  	bcm2835_gpio_fsel(gpioPin, BCM2835_GPIO_FSEL_OUTP);
-  	bcm2835_gpio_write(gpioPin, LOW);
-  } else {  // state - get current state of the relay
-	int state = bcm2835_gpio_lev(gpioPin);
-	if (state == 0) {
-		printf("off");
-	} else {
-		printf("on");
-	}
-  }	
+  printf("Using pin #%d\n", dhtpin);
+  readDHT(type, dhtpin);
   return 0;
 
 } // main

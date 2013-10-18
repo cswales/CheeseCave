@@ -1,10 +1,12 @@
 # Server code for the CheeseCave
 import BaseHTTPServer
 import yaml
+import cgi
+import json
 
 class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
-	DOC_ROOT = "/Users/carolyn/Devel/CheeseCave/DocRoot"
+	DOC_ROOT = "./DocRoot"
 
 #	def do_HEAD(self):
 #		if self.path == "/":
@@ -51,23 +53,22 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			else: # or catch throw from others...
 				self.send_response(404)	
 				
-			
 		else:
 			print "attempting to send file" 
 			self.send_file()
 
 	def do_POST(self):
+		print("doing PoST")
 		if self.path.startswith("/cheesecave/"):
-			attr = api_objs[2]
-			if attr == "desired_temp" or attr == "desired_humidity":
-				if attr == "desired_humidity":
-					pass
-					# erk. Where do we set this value?
-				elif attr == "desired_tempurature":
-					pass
-					# erk number 2. Where do we set this value?
+			api_objs = self.path.split('/')	
+			if (self.path == "/cheesecave/"):
+				postVars = self.parse_POST()
+				if ("desired_humidity" in postVars): 
+					setDesiredHumidity(int(postVars["desired_humidity"][0]))
+				if "desired_temperature" in postVars:
+					setDesiredTemperature(int(postVars["desired_temperature"][0]))
 				self.send_response(200)
-			elif attr == "snapshot":
+			elif api_objs[2] == "snapshot":
 				takeSnapshot() # for the moment, we'll make this synchronous. Bad us.
 				with open("current_snapshot", "rb") as f:
 					self.send_response(200)
@@ -75,10 +76,21 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 					self.end_headers()
 					self.wfile.write(f.read())
 			else:
-				if attr == "temp" or attr == "humidity":
-					self.send_response(503) # is this right? I don't think so
+				self.send_response(503) # is this right? I don't think so
+		else:
+			self.send_response(404)
 
+	def parse_POST(self):
+		ctype, pdict = cgi.parse_header(self.headers['Content-Type'])
+		if (ctype == "multipart/form-data"):
+			postvars = cgi.parse_multipart(self.rfile, pdict)
+		elif (ctype == "application/x-www-form-urlencoded"):
+			length = int(self.headers.getheader('Content-Length'))
+			postvars = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
+		else:
+			postvars = {}
 
+		return postvars
 
 	def send_file(self):
 		if self.path == "" or self.path == "/":
@@ -93,34 +105,49 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				self.wfile.write(f.read())
 		except IOError:
 			self.send_response(404)
-			
+
+CONFIG_FILE = "config.yaml"
+STATE_FILE = "stats.yaml"
 
 def getTemperatureJSON():
-	file = open(STATE_FILE, 'r')
-	data = yaml.load(file)
-	return JSONify([data["temperature"]])
-	#return "[52]"
-
-CONFIG_FILE = config.yaml
-STATE_FILE = stats.yaml
+	with open(STATE_FILE, 'r') as file:
+		data = yaml.load(file)
+		return json.dumps([data["temperature"]])
+		#return "[52]"
 
 def getHumidityJSON():
-	file = open(STATE_FILE, 'r')
-	data = yaml.load(file)
-	return JSONify([data["humidity"]])
-	#return "[88]"
+	with  open(STATE_FILE, 'r') as file:
+		data = yaml.load(file)
+		return json.dumps([data["humidity"]])
+		#return "[88]"
 
 def getDesiredTempJSON():
-	file = open(CONFIG_FILE, 'r')
-	data = yaml.load(file)
-	return JSONify([data["targets"]["temperature"]])
-	#return "[55]"
+	with open(CONFIG_FILE, 'r') as file:
+		data = yaml.load(file)
+		return json.dumps([data["targets"]["temperature"]])
+		#return "[55]"
+
+def setDesiredTemperature(temp):
+	with open(CONFIG_FILE, 'r+') as file:
+		data = yaml.load(file)
+		data["targets"]["temperature"] = temp
+		file.seek(0)
+		file.truncate()
+		file.write(yaml.dump(data))
+
+def setDesiredHumidity(humidity):
+	with open(CONFIG_FILE, 'r+') as file:
+		data = yaml.load(file)
+		data["targets"]["humidity"] = humidity
+		file.seek(0)
+		file.truncate()
+		file.write(yaml.dump(data))
 
 def getDesiredHumidityJSON():
-	file = open(CONFIG_FILE, 'r')
-	data = yaml.load(file)
-	return JSONify([data["targets"]["humidity"]])
-	#return "[89]"
+	with open(CONFIG_FILE, 'r') as file:
+		data = yaml.load(file)
+		return json.dumps([data["targets"]["humidity"]])
+		#return"[89]"
 
 
 def getContentType(path):
@@ -138,7 +165,7 @@ def getContentType(path):
 	return "text/plain"
 		
 if __name__ == '__main__':
-	server = BaseHTTPServer.HTTPServer(('localhost', 9000), CheesecaveHandler)
+	server = BaseHTTPServer.HTTPServer(('0.0.0.0', 9000), CheesecaveHandler)
 	try:
 		server.serve_forever()
 	except KeyboardInterrupt:
