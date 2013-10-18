@@ -4,9 +4,11 @@
 	<link href="./main.css" rel="stylesheet" type="text/css"> 
 	<style type="text/css">
 		h2 {margin-bottom:2px;}
+		.hidden {display:none}
 	</style>
 	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> 
 	<script type="text/javascript" src="./jquery.min.js"></script>
+	<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js">
 	<script type="text/javascript">
 	</script>
 </head>
@@ -31,7 +33,17 @@ Cheesecave
 <tr>
 <td>Setpoint:</td><td><span class='setpoint'></span></td>
 </tr></table> 
-<button>Change Setpoint</button>
+<button onclick="changeTemperatureSetpoint()">Change Setpoint</button>
+<div id="change_temperature_setpoint" class="hidden" title="Change Setpoint">
+	<form onsubmit="submitNewTemperatureSetpoint()">
+	Enter new Temperature Setpoint (0-100):
+	<input type="text"></input>
+	<div class="hidden" style="color:red">
+		 Temperature Setpoint must be between 30 and 80
+	</div>
+	<input type="submit">
+	</form>
+</div>
 </div>
 <div id='humidity'>
 <h2>Humidity</h2>
@@ -40,7 +52,17 @@ Cheesecave
 </tr><tr>
 <td>Setpoint:</td><td><span id='humidity_setpoint'></span> </td>
 </tr></table>
-<button>Change Setpoint</button>
+<button onclick="changeHumiditySetpoint()">Change Setpoint</button>
+<div id="change_humidity_setpoint" class="hidden" title="Change Setpoint">
+	<form onsubmit = "return submitNewHumiditySetpoint()">
+	Enter new Humidity Setpoint (0-100):
+	<input type="text"></input>
+	<div class="hidden error" style="color:red">
+		 Humidity Setpoint must be between 0 and 100
+	</div>
+	<input type="submit">
+	</form>
+</div>
 <div id='image'>
 <h2>CheeseCam &nbsp;
 <button type="button">Refresh Image</button></h2>
@@ -59,6 +81,56 @@ $(document).ready(function() {
 	// getCaveStats();
 	// XXX need to set up image
 });
+
+function changeTemperatureSetpoint()
+{
+	$("#change_temperature_setpoint").dialog();
+}
+
+function changeHumiditySetpoint()
+{
+	$("#change_humidity_setpoint").dialog();
+}
+
+function submitNewHumiditySetpoint()
+{
+	try {
+		var newHumidity = parseInt($("#change_humidity_setpoint input").val());
+		if (isNaN(newHumidity) || newHumidity < 0 || newHumidity > 100) {
+			$('#change_humidity_setpoint div.error').css("display", "block");
+		} else {
+			setTargetHumidity(newHumidity);
+			console.log("new humidity is " + newHumidity);
+			$("#change_humidity_setpoint").dialog('close');
+			$('#change_humidity_setpoint div.error').css("display", "hidden");
+			$("#change_humidity_setpoint input[type='text']").val("");
+		}
+	} catch (NumberFormatException) {
+		$('#change_humidity_setpoint .error').css("display", "block");
+	}
+	return false;
+}
+
+function  submitNewTemperatureSetpoint()
+{
+	try {
+		var newTemp = parseInt($("#change_temperature_setpoint input").val());
+		if (isNaN(newTemp) || newTemp < 32 || newTemp > 90) {
+			$('#change_temperature_setpoint div.error').css("display", "block");
+		} else {
+			setTargetTemperature(newTemp);
+			console.log("new temperature is " + newTemp);
+			$("#change_temperature_setpoint").dialog('close');
+			$('#change_temperature_setpoint div.error').css("display", "hidden");
+			$("#change_temperature_setpoint input[type='text']").val("");
+		}
+	} catch (NumberFormatException) {
+		$('#change_temperature_setpoint .error').css("display", "block");
+	}
+	return false;
+}
+
+
 
 function getCaveStats()
 {
@@ -145,6 +217,37 @@ function getTemperatureSetpoint()
 		}
 	});
 }
+
+function setTargetTemperature(temp)
+{
+	$.ajax({
+		type: 'POST',
+		url: "/cheesecave/",
+		data: {desired_temperature:temp},
+		success: function(data, status,req) {
+			$("#temp .setpoint").html(temp);
+		},
+		error: function(req,status,errorThrown) {
+			printError("Could not set temperature setpoint");
+		}
+	});
+}
+
+function setTargetHumidity(humidity)
+{
+	$.ajax({
+		type: 'POST',
+		url: "/cheesecave/",
+		data: {desired_humidity:humidity},
+		success: function(data, status,req) {
+				$("#humidity_setpoint").html(humidity);
+		},
+		error: function(req,status,errorThrown) {
+			printError("Could not set temperature setpoint");
+		}
+	});
+}
+
 
 function printError(origin, req, status, errorThrown)
 {
