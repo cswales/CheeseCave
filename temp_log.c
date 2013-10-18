@@ -2,7 +2,9 @@
 //  Example program
 //  15-January-2012
 //  Dom and Gert
-//
+//  Example extended to continually output to
+//  YAML files for parsing by other programs
+//  brianb Oct 2013
 
 
 // Access from ARM Running Linux
@@ -11,6 +13,8 @@
 #define BCM2708_PERI_BASE        0x20000000
 #define GPIO_BASE                (BCM2708_PERI_BASE + 0x200000) /* GPIO controller */
 
+// want time n such?
+// #define __USE_POSIX 1
 
 #include <stdio.h>
 #include <string.h>
@@ -35,42 +39,59 @@
 #define DHT22 22
 #define AM2302 22
 
-int bits[250], data[100];
-int bitidx = 0;
+// hard code the sensor type, can turn it back to a parameter if you like
+#define SENSOR_TYPE DHT22
 
-int readDHT(int type, int pin) {
+// read only globals set from command line
+//
+int     g_pin;
+char    *g_sensor_name;
+char    *g_dir_name;
+char    g_delay;
+char    g_history_fn[255];
+char    g_stats_fn[255];
+
+
+int sample_sensor(void) {
+
   int counter = 0;
   int laststate = HIGH;
   int j=0;
 
-  // Set GPIO pin to output
-  bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_OUTP);
+  fprintf(stderr, "sampling sensor %s at pin %d\n",g_sensor_name,g_pin);
 
-  bcm2835_gpio_write(pin, HIGH);
+  // Set GPIO pin to output
+  bcm2835_gpio_fsel(g_pin, BCM2835_GPIO_FSEL_OUTP);
+
+  bcm2835_gpio_write(g_pin, HIGH);
   usleep(500000);
-  bcm2835_gpio_write(pin, LOW);
+  bcm2835_gpio_write(g_pin, LOW);
   usleep(20000);
 
   // Set GPIO to input
-  bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_fsel(g_pin, BCM2835_GPIO_FSEL_INPT);
 
-  data[0] = data[1] = data[2] = data[3] = data[4] = 0;
 
   // wait for pin to drop?
-  while (bcm2835_gpio_lev(pin) == 1) {
+  while (bcm2835_gpio_lev(g_pin) == 1) {
     usleep(1);
   }
+
+  int bits[250], data[100];
+
+  data[0] = data[1] = data[2] = data[3] = data[4] = 0;
+  int bitidx = 0;
 
   // read data!
   for (int i=0; i< MAXTIMINGS; i++) {
     counter = 0;
-    while ( bcm2835_gpio_lev(pin) == laststate) {
+    while ( bcm2835_gpio_lev(g_pin) == laststate) {
       counter++;
       //nanosleep(1);   // overclocking might change this?
       if (counter == 1000)
         break;
     }
-    laststate = bcm2835_gpio_lev(pin);
+    laststate = bcm2835_gpio_lev(g_pin);
     if (counter == 1000) break;
     bits[bitidx++] = counter;
 
@@ -94,30 +115,110 @@ int readDHT(int type, int pin) {
 
   printf("Data (%d): 0x%x 0x%x 0x%x 0x%x 0x%x\n", j, data[0], data[1], data[2], data[3], data[4]);
 
-  if ((j >= 39) &&
-      (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF)) ) {
+  if ((j < 39) ||
+      (data[4] != ((data[0] + data[1] + data[2] + data[3]) & 0xFF)) ) {
+    //
+    fprintf(stderr, "Poor man's checksum failed.\n");
+    return(-1);
+  }
 
-    // yay!
-    if (type == DHT11) {
-      printf("Temp = %d *C, Hum = %d \%\n", data[2], data[0]);
-    }
+  float c = 0.0, f=0.0, h=0.0;
 
-    if (type == DHT22) {
-      float c, f, h;
-      h = data[0] * 256 + data[1];
-      h /= 10;
+  // yay!
+  if (SENSOR_TYPE == DHT11) {
+    printf("Temp = %d *C, Hum = %d \%\n", data[2], data[0]);
+    c = (float) data[2];
+    h = (float) data[0];
+  }
 
-      c = (data[2] & 0x7F)* 256 + data[3];
-      c /= 10.0;
-      if (data[2] & 0x80)  c *= -1;
-      f = ((c * 9.0) / 5.0) + 32.0;
-      printf("Temp =  %.1f *C %.1f *F, Hum = %.1f \%\n", c, f, h);
+  if (SENSOR_TYPE == DHT22) {
 
-    }
-    return 1;
+    h = data[0] * 256 + data[1];
+    h /= 10;
+
+    c = (data[2] & 0x7F)* 256 + data[3];
+    c /= 10.0;
+    if (data[2] & 0x80)  c *= -1;
+
+  }
+
+  f = ((c * 9.0) / 5.0) + 32.0;
+  printf("Temp =  %.1f *C %.1f *F, Hum = %.1f \%\n", c, f, h);
+
+  // some basic data validation
+  if (f < 1.0) {
+	fprintf(stderr, "do not believe temp is less than 1 degree F\n");
+	return(-1);
+  }
+  if (f > 150.0) {
+    fprintf(stderr, "do not believe temp is greater than 150 degree F\n");
+    return(-1);
+  }
+  if (h < 1.0) {
+    fprintf(stderr, "do not believe humidity is less than 1\n");
+	return(-1);
+  }
+  if (h > 101.0) {
+    fprintf(stderr, "do not believe humidity is greater than 100\n");
+    return(-1);
+  }
+
+  // get current time - "canonical" (not-exactly-iso8601?)
+  time_t now_time = time(NULL);
+  struct tm now_tm = {0};
+  localtime_r(&now_time, &now_tm);
+  char now_str[40];
+  // WRONG - this is not ZULU time
+  strftime(now_str, sizeof now_str, "%FT%TZ", &now_tm);
+
+  // update the history.yaml file
+  // format is "sequence of maps" which looks like:
+  // - { sensor: sname, time: XXXX, epoch: YYYYY, temperature: ZZ.Z, humidity: LL.L }
+
+  FILE *fp = fopen(g_history_fn, "a");
+  if (fp == NULL) return(-1);
+
+  fprintf(fp, "- { sensor: %s,time: %s,epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
+
+  fclose(fp);
+
+  // Also update the stats.yaml - and do the safe thing with writing to a temp then swapping the file
+  // format: just sensor: sname\ntime: XXX .... as above
+
+  char tmpName[256];
+  tmpnam(tmpName);
+  fp = fopen(tmpName,"w");
+  if (fp == NULL) {
+    fprintf(stderr, "could not open temp file for output");
+    return(-1);
+  }
+
+  fprintf(fp, "sensor: %s\n",g_sensor_name);
+  fprintf(fp, "time: %s\n",now_str);
+  fprintf(fp, "epoch: %d\n",now_time);
+  fprintf(fp, "temperature: %.1f\n",f);
+  fprintf(fp, "humidity: %.1f\n",h);
+  fprintf(fp, "celsius: %.1f\n",c);
+
+  fclose(fp);
+
+  // mv to correct location
+  if (0 != rename(tmpName,g_stats_fn)) {
+    fprintf(stderr, "could not move to output file");
+    return(-1);
   }
 
   return 0;
+}
+
+void usage(void) {
+  fprintf(stderr, "usage:\n");
+  fprintf(stderr, "  out-dir sensor-name pin-number secs-delay \n");
+
+  fprintf(stderr, "  the file 'sensor-name-history.yaml' will be updated,\n");
+  fprintf(stderr, "  and sensor-name-stats.yaml with just the current,\n");
+  fprintf(stderr, "  and it happens every secs-delay seconds (although if we get a GPIO error\n");
+  fprintf(stderr, "  we just skip a slot (assumes DHT22 but you can change #define\n");
 }
 
 int main(int argc, char **argv)
@@ -125,31 +226,54 @@ int main(int argc, char **argv)
   if (!bcm2835_init())
     return 1;
 
-  if (argc != 3) {
-    printf("usage: %s [11|22|2302] GPIOpin#\n", argv[0]);
-    printf("example: %s 2302 4 - Read from an AM2302 connected to GPIO #4\n", argv[0]);
-    return 2;
+  if (argc != 5) {
+    usage();
+    exit(-1);
   }
 
-  int type = 0;
-  if (strcmp(argv[1], "11") == 0) type = DHT11;
-  if (strcmp(argv[1], "22") == 0) type = DHT22;
-  if (strcmp(argv[1], "2302") == 0) type = AM2302;
-  if (type == 0) {
-    printf("Select 11, 22, 2302 as type!\n");
-    return 3;
-  }
-  
-  int dhtpin = atoi(argv[2]);
+  char *out_dir = argv[1];
+  g_sensor_name = argv[2];
+  g_pin = atoi(argv[3]);
+  g_delay = atoi(argv[4]);
 
-  if (dhtpin <= 0) {
-    printf("Please select a valid GPIO pin #\n");
-    return 3;
+  fprintf(stderr,"out_dir %s sensor_name %s pin %d delay %d\n",out_dir,g_sensor_name,g_pin,g_delay);
+
+  switch (g_pin) {
+    case 2:
+    case 3:
+    case 4:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 14:
+    case 15:
+    case 17:
+    case 18:
+    case 22:
+    case 23:
+    case 24:
+    case 27:
+      break;
+
+    default:
+      fprintf(stderr," pin %d is not valid for the raspberry pi\n",g_pin);
+      return(-1);
   }
 
-  printf("Using pin #%d\n", dhtpin);
-  readDHT(type, dhtpin);
-  return 0;
+  snprintf(g_history_fn,sizeof(g_history_fn),"%s/%s-history.yaml",out_dir,g_sensor_name);
+  snprintf(g_stats_fn,sizeof(g_stats_fn),"%s/%s-stats.yaml",out_dir,g_sensor_name);
+
+  do {
+
+    sample_sensor();
+
+    usleep( g_delay * 1000 * 1000);
+
+  } while (1);
+
+  return(0);
 
 } // main
 

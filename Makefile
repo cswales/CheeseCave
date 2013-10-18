@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS =  -std=c99 -I. -lbcm2835
+#CFLAGS =  -std=c99 -I. -lbcm2835
+CFLAGS =  -std=gnu99 -I. -lbcm2835
 DEPS = 
 
 %.o: %.c $(DEPS)
@@ -8,3 +9,5 @@ DEPS =
 
 %: %.c 
 	$(CC) -o $@ $^ $(CFLAGS)
+
+all: relay temp_log
