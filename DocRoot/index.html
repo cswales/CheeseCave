@@ -1,6 +1,7 @@
 <!doctype html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us">
 <head>
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css"/>
 	<link href="./main.css" rel="stylesheet" type="text/css"> 
 	<style type="text/css">
 		h2 {margin-bottom:2px;}
@@ -35,7 +36,7 @@ Cheesecave
 </tr></table> 
 <button onclick="changeTemperatureSetpoint()">Change Setpoint</button>
 <div id="change_temperature_setpoint" class="hidden" title="Change Setpoint">
-	<form onsubmit="submitNewTemperatureSetpoint()">
+	<form onsubmit="return submitNewTemperatureSetpoint()">
 	Enter new Temperature Setpoint (0-100):
 	<input type="text"></input>
 	<div class="hidden" style="color:red">
@@ -235,6 +236,7 @@ function setTargetTemperature(temp)
 
 function setTargetHumidity(humidity)
 {
+	console.log("attemptint to set target humidity")
 	$.ajax({
 		type: 'POST',
 		url: "/cheesecave/",

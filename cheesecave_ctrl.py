@@ -5,8 +5,9 @@ import os.path
 import time
 import subprocess
 
-CONFIG_FILE_NAME = "config.yaml"
+CONFIG_FILE_NAME = "/opt/pi/CheeseCave/config.yaml"
 STATS_FILE_NAME  = "/var/lib/CheeseCave/sensor1-stats.yaml"
+RELAY_EXECUTABLE = "/opt/pi/CheeseCave/relay"
 
 config_mod_time = 0
 
@@ -23,12 +24,11 @@ def config_has_changed():
 
 def get_relay_state():
 	#return ["on"]
-	args = "./relay state"
-	return [subprocess.Popen(["sudo", "/opt/pi/CheeseCave/relay", "state"], stdout=subprocess.PIPE).communicate()[0]]
+	return [subprocess.Popen(["sudo", RELAY_EXECUTABLE, "state"], stdout=subprocess.PIPE).communicate()[0]]
 
 def set_relay_state(state):
 	#pass
-	subprocess.Popen(["sudo", "/opt/pi/CheeseCave/relay", state])
+	subprocess.Popen(["sudo", RELAY_EXECUTABLE, state])
 
 def get_current_stats():
 	stats = open(STATS_FILE_NAME, 'r')
@@ -59,12 +59,13 @@ if __name__ == "__main__":
 			(0.5 * config['temperature_range'])) and 
 			relays[0] == 'off'):
 			set_relay_state("on")
-			print "turned relay on"
+			print(time.strftime("%b %d %Y %1:%M%p: turned relay on"))
 		elif ((stats['temperature'] < config['temperature'] -
 			(0.5 * config['temperature_range'])) and 
 			relays[0] == 'on'):
 			set_relay_state("off")
-			print "turned relay off"
+			print(time.strftime("%b %d %Y %1:%M%p %Z: turned relay off"))
 		else:
-			print "no changes needed"	
+			pass
+			#print "no changes needed"	
 		time.sleep(5)

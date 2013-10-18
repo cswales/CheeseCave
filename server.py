@@ -158,11 +158,13 @@ def getContentType(path):
 	elif path.endswith(".png"):
 		return "img/png"
 	elif path.endswith(".gif"):
-		return "img/png"
+		return "img/gif"
 	elif path.endswith(".js"):
 		return "text/javascript"
 	elif path.endswith(".html"):
 		return "text/html"
+	elif path.endswith(".css"):
+		return "text/css"
 
 	return "text/plain"
 		
