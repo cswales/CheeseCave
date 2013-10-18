@@ -4,6 +4,7 @@ import yaml
 import os.path
 import time
 import subprocess
+import sys
 
 CONFIG_FILE_NAME = "/opt/pi/CheeseCave/config.yaml"
 STATS_FILE_NAME  = "/var/lib/CheeseCave/sensor1-stats.yaml"
@@ -15,7 +16,7 @@ def load_config():
 	global config_mod_time
 	with open(CONFIG_FILE_NAME, 'r') as f:
 		data = yaml.load(f)
-		print yaml.dump(data)
+		#print yaml.dump(data)
 		config_mod_time = os.path.getmtime(CONFIG_FILE_NAME)
 	return data['targets']
 
@@ -33,7 +34,7 @@ def set_relay_state(state):
 def get_current_stats():
 	stats = open(STATS_FILE_NAME, 'r')
 	data = yaml.load(stats)
-	print yaml.dump(data)		
+	#print yaml.dump(data)		
 	return data
 
 if __name__ == "__main__":
@@ -43,7 +44,7 @@ if __name__ == "__main__":
 		if (config_has_changed() or first_time):
 			first_time = False
 			config = load_config()
-			print config
+			#print config
 
 		# get relay state(s)
 		relays = get_relay_state()
@@ -59,12 +60,14 @@ if __name__ == "__main__":
 			(0.5 * config['temperature_range'])) and 
 			relays[0] == 'off'):
 			set_relay_state("on")
-			print(time.strftime("%b %d %Y %1:%M%p: turned relay on"))
+			print time.strftime("%b %d %Y %I:%M%p %Z: turned relay ON")
+			sys.stdout.flush()	
 		elif ((stats['temperature'] < config['temperature'] -
 			(0.5 * config['temperature_range'])) and 
 			relays[0] == 'on'):
 			set_relay_state("off")
-			print(time.strftime("%b %d %Y %1:%M%p %Z: turned relay off"))
+			print time.strftime("%b %d %Y %I:%M%p %Z: turned relay OFF")
+			sys.stdout.flush()	
 		else:
 			pass
 			#print "no changes needed"	
