@@ -6,7 +6,7 @@ import time
 import subprocess
 
 CONFIG_FILE_NAME = "config.yaml"
-STATS_FILE_NAME  = "stats.yaml"
+STATS_FILE_NAME  = "/var/lib/CheeseCave/sensor1-stats.yaml"
 
 config_mod_time = 0
 

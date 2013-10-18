@@ -4,9 +4,11 @@ import yaml
 import cgi
 import json
 
+
 class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
-	DOC_ROOT = "./DocRoot"
+	DOC_ROOT = "/opt/pi/CheeseCave/DocRoot"
+	SNAPSHOT = "/opt/pi/CheeseCave/current_snapshot"
 
 #	def do_HEAD(self):
 #		if self.path == "/":
@@ -44,7 +46,7 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				self.end_headers()
 				self.wfile.write(returnStr)
 			elif attr == "snapshot":
-				with open("current_snapshot", "rb") as f:
+				with open(self.SNAPSHOT, "rb") as f:
 					self.send_response(200)
 					self.send_header("Content_Type", "image/jpeg")
 					self.end_headers()
@@ -70,7 +72,7 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				self.send_response(200)
 			elif api_objs[2] == "snapshot":
 				takeSnapshot() # for the moment, we'll make this synchronous. Bad us.
-				with open("current_snapshot", "rb") as f:
+				with open(self.SNAPSHOT, "rb") as f:
 					self.send_response(200)
 					self.send_header("Content_Type", "image/jpeg")
 					self.end_headers()
@@ -106,8 +108,8 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		except IOError:
 			self.send_response(404)
 
-CONFIG_FILE = "config.yaml"
-STATE_FILE = "stats.yaml"
+CONFIG_FILE = "/opt/pi/CheeseCave/config.yaml"
+STATE_FILE = "/var/lib/CheeseCave/sensor1-stats.yaml"
 
 def getTemperatureJSON():
 	with open(STATE_FILE, 'r') as file:
