@@ -35,7 +35,7 @@ Cheesecave
 <table><tr>
 <td>Current:</td><td> <span id='humidity_current'></span></td>
 </tr><tr>
-<td>Setpoint:</td></td><span class='setpoint'></span> </td>
+<td>Setpoint:</td></td><span id='humidity_setpoint'></span> </td>
 </tr></table>
 <button>Change Setpoint</button>
 <div id='image'>
@@ -110,7 +110,7 @@ function getHumiditySetpoint()
 		url:"/cheesecave/desired_humidity",
 		success: function(data, status, req) {
 			if (data != "") {
-				$("#humidity .setpoint").html(data[0]);
+				$("#humidity_setpoint").html(data[0]);
 				//var humidity = $.parseJSON(data);
 			} else {
 				console.log("No data");
