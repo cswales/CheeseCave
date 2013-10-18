@@ -8,22 +8,32 @@
 	</script>
 </head>
 <body>
+<div id="header">
+<div width="30%" style="float:left;">
 <h1>
-Cheesecave!!!
+Cheesecave
 </h1>
+</div>
+<div style="min-width:20;float:left">&nbsp;&nbsp;</div>
+<div >
+<img src="./cheese.gif" width="120">
+</div>
+</div> <!-- end header -->
 <div id='temp'>
 Current Temp: <span id='temp_current'></span><br>
-Setpoint:<span class='setpoint'></span>
+Setpoint:<span class='setpoint'></span> 
+<br><button>Change Setpoint</button>
 </div>
 <div id='humidity'>
 Current Humidity: <span id='humidity_current'></span><br>
-Setpoint:<span class='setpoint'></span>
+Setpoint:<span class='setpoint'></span> 
+<br><button>Change Setpoint</button>
 <div id='image'>
 Last Image:
 <div id='curImage'>
 <img src="cheesecave/snapshot"/>
 </div>
-<input type="button">Refresh Image</input>
+<button type="button">Refresh Image</button>
 </div>
 
 </body>
