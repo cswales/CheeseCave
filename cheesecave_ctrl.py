@@ -3,6 +3,7 @@
 import yaml
 import os.path
 import time
+import subprocess
 
 CONFIG_FILE_NAME = "config.yaml"
 STATS_FILE_NAME  = "stats.yaml"
@@ -11,24 +12,23 @@ config_mod_time = 0
 
 def load_config():
 	global config_mod_time
-	config = open(CONFIG_FILE_NAME, 'r')
-	data = yaml.load(config)
-	print yaml.dump(data)
-	# close file?
-	# throw if file not found?
-	config_mod_time = os.path.getmtime(CONFIG_FILE_NAME)
+	with open(CONFIG_FILE_NAME, 'r') as f:
+		data = yaml.load(f)
+		print yaml.dump(data)
+		config_mod_time = os.path.getmtime(CONFIG_FILE_NAME)
 	return data['targets']
 
 def config_has_changed():
 	return os.path.getmtime(CONFIG_FILE_NAME) != config_mod_time
 
 def get_relay_state():
-	return ["on"]
-	#subprocess.Popen(["relay", "state"], stdout=subprocess.PIPE).communicate()[0]
+	#return ["on"]
+	args = "./relay state"
+	return [subprocess.Popen(["sudo", "/opt/pi/CheeseCave/relay", "state"], stdout=subprocess.PIPE).communicate()[0]]
 
 def set_relay_state(state):
-	pass
-	#subprocess.call(["relay", state])
+	#pass
+	subprocess.Popen(["sudo", "/opt/pi/CheeseCave/relay", state])
 
 def get_current_stats():
 	stats = open(STATS_FILE_NAME, 'r')
