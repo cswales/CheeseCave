@@ -3,7 +3,8 @@ import BaseHTTPServer
 import yaml
 import cgi
 import json
-
+import subprocess
+import sys
 
 class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -25,11 +26,14 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		# start with 'cheesecave', serve up a straight up document from
 		# the document root.
 		print self.path
+		print ("Doing get...")
+		sys.stdout.flush()	
 		if self.path.startswith("/cheesecave/"):
 			print "API function"
-			api_objs = self.path.split('/')
+			api_objs = self.path.split('?')[0].split('/')
 			attr = api_objs[2]
 			print attr
+			sys.stdout.flush()
 			if attr == "temp" or attr == "desired_temp" or attr == "humidity" or attr == "desired_humidity":
 				print "know attr"
 				if attr == "temp":
@@ -72,11 +76,10 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				self.send_response(200)
 			elif api_objs[2] == "snapshot":
 				takeSnapshot() # for the moment, we'll make this synchronous. Bad us.
-				with open(self.SNAPSHOT, "rb") as f:
-					self.send_response(200)
-					self.send_header("Content_Type", "image/jpeg")
-					self.end_headers()
-					self.wfile.write(f.read())
+				#with open(self.SNAPSHOT, "rb") as f:
+				self.send_response(200)
+				#self.end_headers()
+				#self.wfile.write(f.read())
 			else:
 				self.send_response(503) # is this right? I don't think so
 		else:
@@ -110,6 +113,13 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 CONFIG_FILE = "/opt/pi/CheeseCave/config.yaml"
 STATE_FILE = "/var/lib/CheeseCave/sensor1-stats.yaml"
+SNAPSHOT_EXECUTABLE = "/opt/pi/CheeseCave/snapshot.sh"
+
+def takeSnapshot():
+	print "attempting to call snapshot.sh"
+	subprocess.Popen(["sh", SNAPSHOT_EXECUTABLE])
+	print "finished calling snapshot.sh"
+	sys.stdout.flush()
 
 def getTemperatureJSON():
 	with open(STATE_FILE, 'r') as file:

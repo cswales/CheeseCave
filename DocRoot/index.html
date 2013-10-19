@@ -66,9 +66,9 @@ Cheesecave
 </div>
 <div id='image'>
 <h2>CheeseCam &nbsp;
-<button type="button">Refresh Image</button></h2>
+<button type="button" onclick="takeSnapshot()">Refresh Image</button></h2>
 <div id='curImage'>
-<img src="cheesecave/snapshot"/>
+<img id="snapshot" src="cheesecave/snapshot"/>
 </div>
 </div>
 
@@ -250,6 +250,22 @@ function setTargetHumidity(humidity)
 	});
 }
 
+function takeSnapshot()
+{
+	console.log("attempting to take snapshot")
+	$.ajax({
+		type:'POST',
+		url: "/cheesecave/snapshot",
+		success: function(data, status, req) {
+			// update the image	
+			var timestamp = new Date().getTime();
+			$("#snapshot").attr('src', $("#snapshot").attr('src') + '?' + timestamp);	
+		},
+		error: function(req,status,errorThrown) {
+			printError("Could not take snapshot");
+		}
+	});
+}
 
 function printError(origin, req, status, errorThrown)
 {
