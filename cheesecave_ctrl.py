@@ -9,6 +9,7 @@ import sys
 CONFIG_FILE_NAME = "/opt/pi/CheeseCave/config.yaml"
 STATS_FILE_NAME  = "/var/lib/CheeseCave/sensor1-stats.yaml"
 RELAY_EXECUTABLE = "/opt/pi/CheeseCave/relay"
+LOG_FILE_NAME    = "/var/lib/CheeseCave/control.yaml"
 
 config_mod_time = 0
 
@@ -22,6 +23,10 @@ def load_config():
 
 def config_has_changed():
 	return os.path.getmtime(CONFIG_FILE_NAME) != config_mod_time
+
+def log_state(state):
+	with open(LOG_FILE_NAME, 'a') as log_file:
+		log_file.write("-{epoch:%d, state:%s}\n"%(int(time.time()), state))
 
 def get_relay_state():
 	#return ["on"]
@@ -60,12 +65,14 @@ if __name__ == "__main__":
 			(0.5 * config['temperature_range'])) and 
 			relays[0] == 'off'):
 			set_relay_state("on")
+			log_state("on")
 			print time.strftime("%b %d %Y %I:%M%p %Z: turned relay ON")
 			sys.stdout.flush()	
 		elif ((stats['temperature'] < config['temperature'] -
 			(0.5 * config['temperature_range'])) and 
 			relays[0] == 'on'):
 			set_relay_state("off")
+			log_state("off")
 			print time.strftime("%b %d %Y %I:%M%p %Z: turned relay OFF")
 			sys.stdout.flush()	
 		else:
