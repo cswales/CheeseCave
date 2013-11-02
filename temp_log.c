@@ -73,8 +73,13 @@ int sample_sensor(void) {
 
 
   // wait for pin to drop?
+  counter = 0;
   while (bcm2835_gpio_lev(g_pin) == 1) {
     usleep(1);
+	if (counter++ > 100000) {
+		fprintf(stderr, "pin never dropped\n");
+		return(-1);
+	}
   }
 
   int bits[250], data[100];
@@ -178,7 +183,7 @@ int sample_sensor(void) {
   FILE *fp = fopen(g_history_fn, "a");
   if (fp == NULL) return(-1);
 
-  fprintf(fp, "- { sensor: %s,time: %s,epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
+  fprintf(fp, "- { sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
 
   fclose(fp);
 
