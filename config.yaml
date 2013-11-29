@@ -1,9 +1,1 @@
-# configuration for the cheesecave
-
-targets:
-    temperature:       45
-    humidity:          28
-    temperature_range: 5
-    humidty_range:     10
-
-
+targets: {humidity: 90, humidity_range: 10, temperature: 45, temperature_range: 3}

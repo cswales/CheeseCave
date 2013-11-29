@@ -10,4 +10,4 @@ DEPS =
 %: %.c 
 	$(CC) -o $@ $^ $(CFLAGS)
 
-all: relay temp_log
+all: relay temp_log_DHT

@@ -114,6 +114,7 @@ function submitNewHumiditySetpoint()
 
 function  submitNewTemperatureSetpoint()
 {
+	console.log("submit new temperature called");
 	try {
 		var newTemp = parseInt($("#change_temperature_setpoint input").val());
 		if (isNaN(newTemp) || newTemp < 32 || newTemp > 90) {
@@ -221,6 +222,7 @@ function getTemperatureSetpoint()
 
 function setTargetTemperature(temp)
 {
+	console.log("attempting to set target temperature");
 	$.ajax({
 		type: 'POST',
 		url: "/cheesecave/",

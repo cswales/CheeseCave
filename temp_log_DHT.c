@@ -58,7 +58,9 @@ int sample_sensor(void) {
   int laststate = HIGH;
   int j=0;
 
+#ifdef DEBUG
   fprintf(stderr, "sampling sensor %s at pin %d\n",g_sensor_name,g_pin);
+#endif
 
   // Set GPIO pin to output
   bcm2835_gpio_fsel(g_pin, BCM2835_GPIO_FSEL_OUTP);
@@ -76,10 +78,10 @@ int sample_sensor(void) {
   counter = 0;
   while (bcm2835_gpio_lev(g_pin) == 1) {
     usleep(1);
-	if (counter++ > 100000) {
-		fprintf(stderr, "pin never dropped\n");
-		return(-1);
-	}
+    if (counter++ > 100000) {
+	   fprintf(stderr, "pin never dropped\n");
+	   return(-1);
+    }
   }
 
   int bits[250], data[100];
@@ -216,6 +218,33 @@ int sample_sensor(void) {
   return 0;
 }
 
+int validate_pin (int pin) {
+  switch (pin) {
+    case 2:
+    case 3:
+    case 4:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 14:
+    case 15:
+    case 16:
+    case 18:
+    case 22:
+    case 23:
+    case 24:
+    case 27:
+      break;
+
+    default:
+      fprintf(stderr," pin %d is not valid for the raspberry pi\n",pin);
+      return(-1);
+  }
+  return(0); // valid
+}
+
 void usage(void) {
   fprintf(stderr, "usage:\n");
   fprintf(stderr, "  out-dir sensor-name pin-number secs-delay \n");
@@ -228,8 +257,7 @@ void usage(void) {
 
 int main(int argc, char **argv)
 {
-  if (!bcm2835_init())
-    return 1;
+
 
   if (argc != 5) {
     usage();
@@ -243,29 +271,13 @@ int main(int argc, char **argv)
 
   fprintf(stderr,"out_dir %s sensor_name %s pin %d delay %d\n",out_dir,g_sensor_name,g_pin,g_delay);
 
-  switch (g_pin) {
-    case 2:
-    case 3:
-    case 4:
-    case 7:
-    case 8:
-    case 9:
-    case 10:
-    case 11:
-    case 14:
-    case 15:
-    case 17:
-    case 18:
-    case 22:
-    case 23:
-    case 24:
-    case 27:
-      break;
-
-    default:
-      fprintf(stderr," pin %d is not valid for the raspberry pi\n",g_pin);
-      return(-1);
+  if (0 != validate_pin(g_pin)) {
+    fprintf(stderr," pin %d is not valid for the raspberry pi\n",g_pin);
+    return(-1);
   }
+
+  if (!bcm2835_init())
+    return 1;
 
   snprintf(g_history_fn,sizeof(g_history_fn),"%s/%s-history.yaml",out_dir,g_sensor_name);
   snprintf(g_stats_fn,sizeof(g_stats_fn),"%s/%s-stats.yaml",out_dir,g_sensor_name);

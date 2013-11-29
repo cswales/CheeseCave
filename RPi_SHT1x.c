@@ -13,9 +13,18 @@ This is a derivative work based on
 
 #include "RPi_SHT1x.h"
 
+/* THIS LIBRARY IS NOT REENTRANT
+   You can't use the library with two sensors!
+   You can rewrite this to be both reentrant and use multiple snsors
+*/
+
+
 /* Global variables of the SHT1x sensor */
 unsigned char SHT1x_crc;
 unsigned char SHT1x_status_reg = 0;
+
+int g_SHT1x_sck_pin = 0;
+int g_SHT1x_data_pin = 0;
 
 void SHT1x_Crc_Check(unsigned char value) 
 {
