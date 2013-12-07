@@ -34,7 +34,7 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			attr = api_objs[2]
 			print attr
 			sys.stdout.flush()
-			if attr == "temp" or attr == "desired_temp" or attr == "humidity" or attr == "desired_humidity":
+			if attr == "temp" or attr == "desired_temp" or attr == "humidity" or attr == "desired_humidity" or attr == "epoch":
 				print "know attr"
 				if attr == "temp":
 					returnStr = getTemperatureJSON()
@@ -45,6 +45,8 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 					returnStr = getHumidityJSON()
 				elif attr == "desired_humidity":
 					returnStr = getDesiredHumidityJSON()
+				elif attr == "epoch":
+					returnStr = getEpochJSON();
 				self.send_response(200)
 				self.send_header("Content-Type", "application/json")
 				self.end_headers()
@@ -132,6 +134,11 @@ def getHumidityJSON():
 		data = yaml.load(file)
 		return json.dumps([data["humidity"]])
 		#return "[88]"
+
+def getEpochJSON():
+	with open(STATE_FILE, 'r') as file:
+		data = yaml.load(file)
+		return json.dumps([data["epoch"]]);
 
 def getDesiredTempJSON():
 	with open(CONFIG_FILE, 'r') as file:

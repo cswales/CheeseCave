@@ -33,6 +33,9 @@ Cheesecave
 </tr>
 <tr>
 <td>Setpoint:</td><td><span class='setpoint'></span></td>
+</tr>
+<tr>
+<td>Date:</td><td><span id='epoch'></span></td>
 </tr></table> 
 <button onclick="changeTemperatureSetpoint()">Change Setpoint</button>
 <div id="change_temperature_setpoint" class="hidden" title="Change Setpoint">
@@ -77,6 +80,7 @@ Cheesecave
 $(document).ready(function() {
 	getHumidity();
 	getTemperature();
+	getEpoch();
 	getHumiditySetpoint();
 	getTemperatureSetpoint();
 	// getCaveStats();
@@ -178,6 +182,20 @@ function getTemperature()
 		}
 	});
 
+}
+
+function getEpoch()
+{
+	$.ajax({
+		type: 'GET',
+		url: "/cheesecave/epoch",
+		success: function(data, status, req) {
+			if (data != "") {
+				var myDate = new Date(data[0]*1000);
+				$("#epoch").html(myDate.toLocaleString());	
+			}	
+		}
+	});
 }
 
 function getHumiditySetpoint()
