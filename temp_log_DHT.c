@@ -16,9 +16,11 @@
 // want time n such?
 // #define __USE_POSIX 1
 
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -29,11 +31,10 @@
 #include <sys/time.h>
 #include <time.h>
 #include <bcm2835.h>
-#include <unistd.h>
 
 #define MAXTIMINGS 100
 
-//#define DEBUG
+//#define DEBUG 1
 
 #define DHT11 11
 #define DHT22 22
@@ -41,6 +42,38 @@
 
 // hard code the sensor type, can turn it back to a parameter if you like
 #define SENSOR_TYPE DHT22
+
+void log_err(char *fmt, ... ) {
+
+  // get current time - "canonical" (not-exactly-iso8601?)
+  time_t now_time = time(NULL);
+  struct tm now_tm = {0};
+  localtime_r(&now_time, &now_tm);
+  char now_str[40];
+  strftime(now_str, sizeof now_str, "%FT%T%Z", &now_tm);
+  fputs(now_str,stderr);
+
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
+}
+
+void log_debug(char *fmt, ... ) {
+  // get current time - "canonical" (not-exactly-iso8601?)
+  time_t now_time = time(NULL);
+  struct tm now_tm = {0};
+  localtime_r(&now_time, &now_tm);
+  char now_str[40];
+  strftime(now_str, sizeof now_str, "%FT%T%Z", &now_tm);
+  fputs(now_str,stdout);
+
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stdout, fmt, args);
+	va_end(args);
+}
+
 
 // read only globals set from command line
 //
@@ -59,7 +92,7 @@ int sample_sensor(void) {
   int j=0;
 
 #ifdef DEBUG
-  fprintf(stderr, "sampling sensor %s at pin %d\n",g_sensor_name,g_pin);
+  log_debug( "sampling sensor %s at pin %d\n",g_sensor_name,g_pin);
 #endif
 
   // Set GPIO pin to output
@@ -79,7 +112,7 @@ int sample_sensor(void) {
   while (bcm2835_gpio_lev(g_pin) == 1) {
     usleep(1);
     if (counter++ > 100000) {
-	   fprintf(stderr, "pin never dropped\n");
+	   log_err( "pin never dropped\n");
 	   return(-1);
     }
   }
@@ -115,8 +148,8 @@ int sample_sensor(void) {
 
 #ifdef DEBUG
   for (int i=3; i<bitidx; i+=2) {
-    printf("bit %d: %d\n", i-3, bits[i]);
-    printf("bit %d: %d (%d)\n", i-2, bits[i+1], bits[i+1] > 200);
+    log_debug("bit %d: %d\n", i-3, bits[i]);
+    log_debug("bit %d: %d (%d)\n", i-2, bits[i+1], bits[i+1] > 200);
   }
 #endif
 
@@ -125,7 +158,7 @@ int sample_sensor(void) {
   if ((j < 39) ||
       (data[4] != ((data[0] + data[1] + data[2] + data[3]) & 0xFF)) ) {
     //
-    fprintf(stderr, "Poor man's checksum failed.\n");
+    log_err( "Poor man's checksum failed.\n");
     return(-1);
   }
 
@@ -154,19 +187,19 @@ int sample_sensor(void) {
 
   // some basic data validation
   if (f < 1.0) {
-	fprintf(stderr, "do not believe temp is less than 1 degree F\n");
+	log_err( "do not believe temp is less than 1 degree F\n");
 	return(-1);
   }
   if (f > 150.0) {
-    fprintf(stderr, "do not believe temp is greater than 150 degree F\n");
+    log_err( "do not believe temp is greater than 150 degree F\n");
     return(-1);
   }
   if (h < 1.0) {
-    fprintf(stderr, "do not believe humidity is less than 1\n");
+    log_err( "do not believe humidity is less than 1\n");
 	return(-1);
   }
   if (h > 101.0) {
-    fprintf(stderr, "do not believe humidity is greater than 100\n");
+    log_err( "do not believe humidity is greater than 100\n");
     return(-1);
   }
 
@@ -175,8 +208,7 @@ int sample_sensor(void) {
   struct tm now_tm = {0};
   localtime_r(&now_time, &now_tm);
   char now_str[40];
-  // WRONG - this is not ZULU time
-  strftime(now_str, sizeof now_str, "%FT%TZ", &now_tm);
+  strftime(now_str, sizeof now_str, "%FT%T%Z", &now_tm);
 
   // update the history.yaml file
   // format is "sequence of maps" which looks like:
@@ -239,7 +271,6 @@ int validate_pin (int pin) {
       break;
 
     default:
-      fprintf(stderr," pin %d is not valid for the raspberry pi\n",pin);
       return(-1);
   }
   return(0); // valid
@@ -269,15 +300,18 @@ int main(int argc, char **argv)
   g_pin = atoi(argv[3]);
   g_delay = atoi(argv[4]);
 
-  fprintf(stderr,"out_dir %s sensor_name %s pin %d delay %d\n",out_dir,g_sensor_name,g_pin,g_delay);
+  log_debug("Starting err_log_DHT: out_dir %s sensor_name %s pin %d delay %d\n",out_dir,g_sensor_name,g_pin,g_delay);
+  log_err("Starting err_log_DHT: out_dir %s sensor_name %s pin %d delay %d\n",out_dir,g_sensor_name,g_pin,g_delay);
 
   if (0 != validate_pin(g_pin)) {
-    fprintf(stderr," pin %d is not valid for the raspberry pi\n",g_pin);
+    log_err(" pin %d is not valid for the raspberry pi\n",g_pin);
     return(-1);
   }
 
-  if (!bcm2835_init())
+  if (!bcm2835_init()) {
+	log_err("Could not init the bcm2835 chip, should never happen\n");
     return 1;
+  }
 
   snprintf(g_history_fn,sizeof(g_history_fn),"%s/%s-history.yaml",out_dir,g_sensor_name);
   snprintf(g_stats_fn,sizeof(g_stats_fn),"%s/%s-stats.yaml",out_dir,g_sensor_name);

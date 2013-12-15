@@ -28,14 +28,78 @@ Sensor:
  * 
 */
 
-#include <bcm2835.h>
+
+#include <unistd.h>
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <time.h>
+#include <bcm2835.h>
+
 #include "RPi_SHT1x.h"
 
-#include <time.h>
-#include <unistd.h>
+#define DEBUG 1
 
-//#define DEBUG 1
+// quick n cheap but nice little logs
+// can easily be adapted to be multithread
+// or a config instead of a define for outputting debug
+
+
+void log_err(char *fmt, ... ) {
+
+  // get current time - "canonical" (not-exactly-iso8601?)
+  time_t now_time = time(NULL);
+  struct tm now_tm = {0};
+  localtime_r(&now_time, &now_tm);
+  char now_str[40];
+  strftime(now_str, sizeof now_str, "%FT%T%Z ", &now_tm);
+  fputs(now_str,stderr);
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+  fflush(stderr);
+}
+
+#ifdef DEBUG
+
+void log_debug(char *fmt, ... ) {
+  // get current time - "canonical" (not-exactly-iso8601?)
+  time_t now_time = time(NULL);
+  struct tm now_tm = {0};
+  localtime_r(&now_time, &now_tm);
+  char now_str[40];
+  strftime(now_str, sizeof now_str, "%FT%T%Z ", &now_tm);
+  fputs(now_str,stdout);
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+
+  fflush(stdout);
+}
+
+#else
+
+void log_debug(char *fmt, ... ) {
+  return;
+}
+
+#endif
+
+
 
 // read only globals set from command line
 //
@@ -49,21 +113,21 @@ char    g_stats_fn[255];
 int init_sensor(void) {
 
 #ifdef DEBUG
-	fprintf(stderr, "init SHT11 %s at data pin %d clock pin %d\n",g_sensor_name,g_data_pin,g_clock_pin);	
+	log_debug( "init SHT11 %s at data pin %d clock pin %d\n",g_sensor_name,g_data_pin,g_clock_pin);	
 #endif
 	
 	// Wait at least 11ms after power-up (chapter 3.1)
 	delay(20); 
 
 #ifdef DEBUG
-	fprintf(stderr, "Initializing SHT-11 pins\n");
+	log_debug( "Initializing SHT-11 pins\n");
 #endif
 	
 	// Set up the SHT1x Data and Clock Pins
 	SHT1x_InitPins();
 
 #ifdef DEBUG
-	fprintf(stderr, "Reset the SHT11\n");
+	log_debug( "Reset the SHT11\n");
 #endif
 	
 	// Reset the SHT1x
@@ -78,47 +142,39 @@ int sample_sensor(void)
 	unsigned char noError = 1;  
 	value humi_val,temp_val;
 
-#ifdef DEBUG
-	fprintf(stderr, "starting measurement\n");
-#endif
+	log_debug( "starting measurement\n");
 	
 	// Request Temperature measurement
 	noError = SHT1x_Measure_Start( SHT1xMeaT );
 	if (!noError) {
-		fprintf(stderr, "could not start measurment, error\n");
+		log_err( "could not start measurment, error\n");
 		return(-1);
 	}
 	
-#ifdef DEBUG
-	fprintf(stderr, "measurement complete, starting get value\n");
-#endif
+	log_debug( "measurement complete, starting get value\n");
 	
 	// Read Temperature measurement
 	noError = SHT1x_Get_Measure_Value( (unsigned short int*) &temp_val.i );
 	if (!noError) {
-		fprintf(stderr, "Could not get value: error\n");
+		log_err( "Could not get value: error %d\n",(int)noError);
 		return(-1);
 	}
 
-#ifdef DEBUG
-	fprintf(stderr, "start measure start for the humidity\n");
-#endif
+	log_debug( "start measure start for the humidity\n");
  
 	// Request Humidity Measurement
 	noError = SHT1x_Measure_Start( SHT1xMeaRh );
 	if (!noError) {
-		fprintf(stderr, "could not get measurement: humidity\n");
+		log_err( "could not get measurement: humidity %d\n",(int)noError);
 		return(-1);
 	}
 
-#ifdef DEBUG
-	fprintf(stderr, "get measurment value\n");
-#endif
+	log_debug( "get measurment value\n");
 		
 	// Read Humidity measurement
 	noError = SHT1x_Get_Measure_Value( (unsigned short int*) &humi_val.i );
 	if (!noError) {
-		fprintf(stderr, "could not get measurement value: humidity\n");
+		log_err( "could not get measurement value: humidity %d\n",(int)noError);
 		return(-1);
 	}
 
@@ -126,9 +182,7 @@ int sample_sensor(void)
 	temp_val.f = (float)temp_val.i;
 	humi_val.f = (float)humi_val.i;
 
-#ifdef DEBUG	
-	fprintf(stderr, "calculating values\n");
-#endif
+	log_debug( "calculating values\n");
 
 	// Calculate Temperature and Humidity
 	SHT1x_Calc(&humi_val.f, &temp_val.f);
@@ -137,50 +191,43 @@ int sample_sensor(void)
 	float f = ((c * 9.0) / 5.0) + 32.0; 
 	float h = humi_val.f;
 
-#ifdef DEBUG
-    fprintf(stdout, "Temp =  %.1f *C %.1f *F, Hum = %.1f \%\n", c, f, h);
-#endif
+    log_debug( "Temp =  %.1f *C %.1f *F, Hum = %.1f \%\n", c, f, h);
 
   // some basic data validation
   if (f < 1.0) {
-	fprintf(stderr, "do not believe temp is less than 1 degree F\n");
+	log_err( "do not believe temp is less than 1 degree F ( %f ) \n",f);
 	return(-1);
   }
   if (f > 150.0) {
-    fprintf(stderr, "do not believe temp is greater than 150 degree F\n");
+    log_err( "do not believe temp is greater than 150 degree F ( %f ) \n",f);
     return(-1);
   }
   if (h < 1.0) {
-    fprintf(stderr, "do not believe humidity is less than 1\n");
+    log_err( "do not believe humidity is less than 1 ( %f ) \n", h);
 	return(-1);
   }
   if (h > 101.0) {
-    fprintf(stderr, "do not believe humidity is greater than 100\n");
+    fprintf(stderr, "do not believe humidity is greater than 100 ( %h ) \n", h);
     return(-1);
   }
 
-#ifdef DEBUG
-	fprintf(stderr, "getting time\n");
-#endif
+  log_debug("getting time\n");
 
   // get current time - "canonical" (not-exactly-iso8601?)
   time_t now_time = time(NULL);
   struct tm now_tm = {0};
   localtime_r(&now_time, &now_tm);
   char now_str[40];
-  // WRONG - this is not ZULU time
-  strftime(now_str, sizeof now_str, "%FT%TZ", &now_tm);
+  strftime(now_str, sizeof now_str, "%FT%T%Z", &now_tm);
 
-#ifdef DEBUG
-	fprintf(stderr, "writing history file\n");
-#endif
+  log_debug( "writing history file\n");
 
   // update the history.yaml file
   // format is "sequence of maps" which looks like:
   // - { sensor: sname, time: XXXX, epoch: YYYYY, temperature: ZZ.Z, humidity: LL.L }
 
   FILE *fp = fopen(g_history_fn, "a");
-  if (fp == NULL) return(-1);
+  if (fp == NULL) { log_err("could not open history file\n"); return(-1); }
 
   fprintf(fp, "- { sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
 
@@ -189,15 +236,13 @@ int sample_sensor(void)
   // Also update the stats.yaml - and do the safe thing with writing to a temp then swapping the file
   // format: just sensor: sname\ntime: XXX .... as above
 
-#ifdef DEBUG
-	fprintf(stderr, "writing stats file\n");
-#endif
+	log_debug("writing stats file\n");
 
   char tmpName[256];
   tmpnam(tmpName);
   fp = fopen(tmpName,"w");
   if (fp == NULL) {
-    fprintf(stderr, "could not open temp file for output");
+    log_err( "could not open temp file for output %d\n", errno);
     return(-1);
   }
 
@@ -212,13 +257,11 @@ int sample_sensor(void)
 
   // mv to correct location
   if (0 != rename(tmpName,g_stats_fn)) {
-    fprintf(stderr, "could not move to output file");
+    log_err( "could not move to output file %d\n",errno);
     return(-1);
   }
 
-#ifdef DEBUG
-	fprintf(stderr, "successfully sampled\n");
-#endif
+  log_debug("successfully sampled\n");
 
   return 0;
 
@@ -245,7 +288,6 @@ int validate_pin (int pin) {
       break;
 
     default:
-      fprintf(stderr," pin %d is not valid for the raspberry pi\n",pin);
       return(-1);
   }
 	return(0); // valid
@@ -275,13 +317,17 @@ int main (int argc, char **argv)
 	g_clock_pin = atoi(argv[4]);
 	g_delay = atoi(argv[5]);
 
+	log_err("starting log measurement on %s\n",g_sensor_name);
+	log_debug("input parameters: out_dir %s sensor_name %s data_pin %d clock_pin %d delay %d\n",
+		out_dir, g_sensor_name, g_data_pin, g_clock_pin, g_delay);
+
 	if (0 != validate_pin(g_data_pin)) {
-		fprintf(stderr, "data pin %d is not a valid raspberry pi GPIO pin\n",g_data_pin);
+		log_err( "data pin %d is not a valid raspberry pi GPIO pin\n",g_data_pin);
 		return(-1);
 	}
 
 	if (0 != validate_pin(g_clock_pin)) {
-		fprintf(stderr, "clock pin %d i snot a valid raspberry pi GPIO pin\n",g_clock_pin);
+		log_err( "clock pin %d i snot a valid raspberry pi GPIO pin\n",g_clock_pin);
 		return(-1);
 	}
 
@@ -289,11 +335,13 @@ int main (int argc, char **argv)
 	snprintf(g_stats_fn,sizeof(g_stats_fn),"%s/%s-stats.yaml",out_dir,g_sensor_name);
 
 	// init the chip
-	if (!bcm2835_init())
+	if (!bcm2835_init()) {
+		log_err(" could not init bcm2835, should never happen\n");
 		return(-1);
+	}
 
 	if (0 != init_sensor()) {
-		fprintf(stderr, "init SHT1x sensor failed\n");
+		log_err( "init SHT1x sensor failed, no chip there? \n");
 		_exit(-1);
 	}
 
