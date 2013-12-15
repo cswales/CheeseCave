@@ -50,13 +50,14 @@ void log_err(char *fmt, ... ) {
   struct tm now_tm = {0};
   localtime_r(&now_time, &now_tm);
   char now_str[40];
-  strftime(now_str, sizeof now_str, "%FT%T%Z", &now_tm);
+  strftime(now_str, sizeof now_str, "%FT%T%Z ", &now_tm);
   fputs(now_str,stderr);
 
 	va_list args;
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
+	fflush(stderr);
 }
 
 void log_debug(char *fmt, ... ) {
@@ -65,13 +66,14 @@ void log_debug(char *fmt, ... ) {
   struct tm now_tm = {0};
   localtime_r(&now_time, &now_tm);
   char now_str[40];
-  strftime(now_str, sizeof now_str, "%FT%T%Z", &now_tm);
+  strftime(now_str, sizeof now_str, "%FT%T%Z ", &now_tm);
   fputs(now_str,stdout);
 
 	va_list args;
 	va_start(args, fmt);
 	vfprintf(stdout, fmt, args);
 	va_end(args);
+	fflush(stdout);
 }
 
 
