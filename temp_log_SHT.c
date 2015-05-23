@@ -222,14 +222,17 @@ int sample_sensor(void)
 
   log_debug( "writing history file\n");
 
-  // update the history.yaml file
-  // format is "sequence of maps" which looks like:
-  // - { sensor: sname, time: XXXX, epoch: YYYYY, temperature: ZZ.Z, humidity: LL.L }
+  // update the history.json file
+  // format is a streaming object format, where each object is its own line line:
+  // { sensor: sname, time: XXXX, epoch: YYYYY, temperature: ZZ.Z, humidity: LL.L }
 
   FILE *fp = fopen(g_history_fn, "a");
   if (fp == NULL) { log_err("could not open history file\n"); return(-1); }
 
-  fprintf(fp, "- { sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
+// this is how we tried to do it with YAML but the parsers did't like it much
+//  fprintf(fp, "- { sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
+// this is how we do it now
+  fprintf(fp, "{ sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
 
   fclose(fp);
 
@@ -331,7 +334,7 @@ int main (int argc, char **argv)
 		return(-1);
 	}
 
-	snprintf(g_history_fn,sizeof(g_history_fn),"%s/%s-history.yaml",out_dir,g_sensor_name);
+	snprintf(g_history_fn,sizeof(g_history_fn),"%s/%s-history.json",out_dir,g_sensor_name);
 	snprintf(g_stats_fn,sizeof(g_stats_fn),"%s/%s-stats.yaml",out_dir,g_sensor_name);
 
 	// init the chip

@@ -212,14 +212,24 @@ int sample_sensor(void) {
   char now_str[40];
   strftime(now_str, sizeof now_str, "%FT%T%Z", &now_tm);
 
-  // update the history.yaml file
+  // update the history.json file
   // format is "sequence of maps" which looks like:
   // - { sensor: sname, time: XXXX, epoch: YYYYY, temperature: ZZ.Z, humidity: LL.L }
 
   FILE *fp = fopen(g_history_fn, "a");
   if (fp == NULL) return(-1);
 
-  fprintf(fp, "- { sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
+// This is hard to parse, it turns out. a "list of maps" means you have to keep the whole thing in memory.
+//  fprintf(fp, "- { sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
+
+// This is better YAML (according to YAML 1.2) because it creates a stream of documents.
+//  fprintf(fp, "--- { sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
+
+// But let's face it, the world is JSON now.
+// If you separate your JSON objects by carriage return, you'll get a single file that's not a "real .JSON" 
+// but it's " streaming JSON " that most parsers will happily deal with - without blowing up memory.
+// Let's use that as the default now.
+	fprintf(fp, "{ sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
 
   fclose(fp);
 
@@ -282,7 +292,7 @@ void usage(void) {
   fprintf(stderr, "usage:\n");
   fprintf(stderr, "  out-dir sensor-name pin-number secs-delay \n");
 
-  fprintf(stderr, "  the file 'sensor-name-history.yaml' will be updated,\n");
+  fprintf(stderr, "  the file 'sensor-name-history.json' will be updated,\n");
   fprintf(stderr, "  and sensor-name-stats.yaml with just the current,\n");
   fprintf(stderr, "  and it happens every secs-delay seconds (although if we get a GPIO error\n");
   fprintf(stderr, "  we just skip a slot (assumes DHT22 but you can change #define\n");
@@ -315,7 +325,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  snprintf(g_history_fn,sizeof(g_history_fn),"%s/%s-history.yaml",out_dir,g_sensor_name);
+  snprintf(g_history_fn,sizeof(g_history_fn),"%s/%s-history.json",out_dir,g_sensor_name);
   snprintf(g_stats_fn,sizeof(g_stats_fn),"%s/%s-stats.yaml",out_dir,g_sensor_name);
 
   do {

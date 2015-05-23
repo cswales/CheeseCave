@@ -1,7 +1,38 @@
 CheeseCave
 ==========
 
-CheeseCave
+# Cookbook
+
+## Prerequisites
+
+Which broadcome libraries and such are required
+
+Which distributions does this work on
+
+## Hardware -- sensor
+
+Explain which sensor and how it is wired
+
+## Hardware -- fridge control
+
+Explain the relay circuit, show a picture, and
+how it is wired
+
+## Make
+
+Makes the 'relay' and 'temp_log_DHT'
+
+## Install
+
+Server, relay, temp_log_DHT
+
+## Data files by default
+
+# Overview
+
+This project controls a fridge. Right now, it simply controls the temperature,
+and provides a webpage for you to see the status. It also records temp and humidity
+into a datafile.
 
 This project has several components.
 
@@ -27,7 +58,7 @@ The DHT-11 is a more sophisticated sensor, and twice the price (again, at Adafru
 So far, after several weeks of running, the DHT-11 has shown no signs of sensor problems,
 and we have more belief that the humidity is correct, although this has not been validated.
 
-The controller
+# The controller
 
 In order to read the temp / humidity sensor and turn on and off a fridge, we have
 the controller program. This is also C and is a daemon. It expects a single GPIO pin
@@ -35,7 +66,7 @@ to be wired to a transistor and a relay. It looks at a YAML config file, and mon
 the "status" file created by the "temp_log" program. It is meant to be run as a daemon
 constantly, and does some file output.
 
-The web page
+# The web page
 
 We have written a small python web server which displays the current status of the cave.
 
@@ -50,31 +81,42 @@ We also realized that the cable that comes with the 'pi is too short, so we'd sw
 a USB camera instead of the pi camera, because the higher bandwidth PI camera doesn't matter for
 the occasional snapshot.
 
-More instructions
+# More instructions
 
 We have a google doc that includes all the information we've been building up regarding
 the different software that needs to be installed, how to run these programs, design choices made,
 all kinds of things. It's not in final form, but you can write us at this account ( or email brian@bulkowski.org )
 and ask questions / ask us to share the current document.
 
-What's next ???
+# What's next ???
 
-Our next extensions of this project are:
-1) HUMIDITY CONTROL. In order to get better cheese ripening, we need humidity control, which
-means being able to pipe air in for air flow (decreasing humidity), which we've decided to use a
-aquarium air pump and control through the pi, and a ultrasonic mister to add humidity. These
-parts are on order.
-2) Better instructions. All of these components are pointing different places, and our
-basic instructions of installing aren't that clear.
-3) Better code structure for the "temp_log". THis should be one executable, with different programs
+1) Switch the data format to streaming JSON instead of YAML. 
+First, we're using YAML wrong.
+Second, JSON has come up with standards for this kind of streaming data
+
+2) Ability to load this data into a visualization system like Mixpanel. Maybe even real-time
+push the data up.
+
+3) Use a small display to show the current status of a Cave. We find that if the temp
+or humidity is wrong, it's a pain to go to the website. Also, our connectivity to the 'cave subnet
+is a little flakey.
+
+4) Better instructions. We've wired the sensors and relays in particular ways --- which work ---
+and we'd like to share our expertise.
+
+5) Humidity control.
+
+6) Better code structure for the "temp_log". THis should be one executable, with different programs
 to measure the values. This means multithreading everything, too.
-4) Better interaction with the SHT sensor. The code that I found (correct license included in source)
+
+7) Better interaction with the SHT sensor. The code that I found (correct license included in source)
 is interacting with the sensor in a pretty dumb way - reading the temp, then the humidity, when the
 sensor supports reading them both at the same time. Also, there is a hardcoded value for the voltage
 of the part, which should be exposed to the command line.
-5) Better makefile. I took a shortcut where 'make.sh' make temp_log_SHT, and 'Makefile' makes temp_log_DHT.
 
-More information about sensors
+8) Better makefile. I took a shortcut where 'make.sh' make temp_log_SHT, and 'Makefile' makes temp_log_DHT.
+
+# More information about sensors
 
 The DHT22 is a low cost sensor available from AdaFruit industries and other sources.
 It uses a one-wire protocol, is terrible at measuring humidity (unless we got a bad one)
