@@ -232,7 +232,7 @@ int sample_sensor(void)
 // this is how we tried to do it with YAML but the parsers did't like it much
 //  fprintf(fp, "- { sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
 // this is how we do it now
-  fprintf(fp, "{ sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
+  fprintf(fp, "{ \"sensor\": \"%s\", \"time\": \"%s\", \"epoch\": %d, \"temperature\": %.1f, \"celsius\": %.1f, \"humidity\": %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
 
   fclose(fp);
 

@@ -229,7 +229,7 @@ int sample_sensor(void) {
 // If you separate your JSON objects by carriage return, you'll get a single file that's not a "real .JSON" 
 // but it's " streaming JSON " that most parsers will happily deal with - without blowing up memory.
 // Let's use that as the default now.
-	fprintf(fp, "{ sensor: %s,time: \"%s\",epoch: %d, temperature: %.1f, celsius: %.1f, humidity: %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
+  fprintf(fp, "{ \"sensor\": \"%s\", \"time\": \"%s\", \"epoch\": %d, \"temperature\": %.1f, \"celsius\": %.1f, \"humidity\": %.1f }\n",g_sensor_name,now_str,now_time,f,c,h);
 
   fclose(fp);
 
