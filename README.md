@@ -88,6 +88,29 @@ the different software that needs to be installed, how to run these programs, de
 all kinds of things. It's not in final form, but you can write us at this account ( or email brian@bulkowski.org )
 and ask questions / ask us to share the current document.
 
+# Data visualization & conversion
+
+Our old YAML data format was rough and wrong. And, YAML just ain't what is used to be.
+
+Thus, I've included two new scripts, written in Go.
+
+```
+go run go/yaml-csv.go -i inputfile -o outputfile
+go run go/yaml-json.go -i inputfile -o outputfile
+```
+
+These files will convert into both JSON and CSV, dropping some of the datapoints
+as spurrious if configured to do so. You will need Go, which is now widely available.
+It has been tested with Go 1.4 and runs on a 50,000 line file in far less than a minute.
+Of course I should make these one file, with an inputformat and outputformat specification,
+but I'm lazy.
+
+Once you have a CSV file, it's easy to use outside services. I found that http://plot.ly/ was
+particularly simple to use. It's very easy to upload the file, click on "time" vs "humidity" and "humidity" to get a nice little plot.
+
+However, there's no zoom in / zoom out that you'd really want for this kind of data. ( Like Cube gives you). Any suggestions apprecated.
+
+
 # What's next ???
 
 1) Switch the data format to streaming JSON instead of YAML. 
