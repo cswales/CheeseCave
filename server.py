@@ -1,6 +1,5 @@
 # Server code for the CheeseCave
 import BaseHTTPServer
-import yaml
 import cgi
 import json
 import subprocess
@@ -113,8 +112,8 @@ class CheesecaveHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		except IOError:
 			self.send_response(404)
 
-CONFIG_FILE = "/opt/pi/CheeseCave/config.yaml"
-STATE_FILE = "/var/lib/CheeseCave/sensor1-stats.yaml"
+CONFIG_FILE = "/opt/pi/CheeseCave/config.json"
+STATE_FILE = "/var/lib/CheeseCave/sensor1-state.json"
 SNAPSHOT_EXECUTABLE = "/opt/pi/CheeseCave/snapshot.sh"
 
 def takeSnapshot():
@@ -125,46 +124,56 @@ def takeSnapshot():
 
 def getTemperatureJSON():
 	with open(STATE_FILE, 'r') as file:
-		data = yaml.load(file)
+		data = json.load(file)
 		return json.dumps([data["temperature"]])
 		#return "[52]"
 
 def getHumidityJSON():
 	with  open(STATE_FILE, 'r') as file:
-		data = yaml.load(file)
+		data = json.load(file)
 		return json.dumps([data["humidity"]])
 		#return "[88]"
 
 def getEpochJSON():
 	with open(STATE_FILE, 'r') as file:
-		data = yaml.load(file)
+		data = json.load(file)
 		return json.dumps([data["epoch"]]);
 
 def getDesiredTempJSON():
 	with open(CONFIG_FILE, 'r') as file:
-		data = yaml.load(file)
+		data = json.load(file)
 		return json.dumps([data["targets"]["temperature"]])
 		#return "[55]"
 
 def setDesiredTemperature(temp):
 	with open(CONFIG_FILE, 'r+') as file:
-		data = yaml.load(file)
+		print "set desired temperature - start"
+		data = json.load(file)
+		print "loaded json file: ",data
 		data["targets"]["temperature"] = temp
+		print "set new value"
 		file.seek(0)
 		file.truncate()
-		file.write(yaml.dump(data))
+		json.dump(data,file)
+		print "wrote file"
+		file.close()
 
 def setDesiredHumidity(humidity):
 	with open(CONFIG_FILE, 'r+') as file:
-		data = yaml.load(file)
+		data = json.load(file)
+		print "set desired humidity - start"
 		data["targets"]["humidity"] = humidity
+		print "loaded json file: ",data
 		file.seek(0)
 		file.truncate()
-		file.write(yaml.dump(data))
+		json.dump(data,file)
+		print "wrote file"
+		file.close()
+		
 
 def getDesiredHumidityJSON():
 	with open(CONFIG_FILE, 'r') as file:
-		data = yaml.load(file)
+		data = json.load(file)
 		return json.dumps([data["targets"]["humidity"]])
 		#return"[89]"
 

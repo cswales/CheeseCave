@@ -1,1 +1,2 @@
-targets: {humidity: 90, humidity_range: 10, temperature: 45, temperature_range: 3}
+targets: {humidity: 90, temperature: 55 }
+config: {temperature_delay: 30, humidity_delay: 5, sleep_delay: 5, compressor_pin: 17, humidity_pin: 22}

@@ -148,11 +148,11 @@ int main(int argc, char **argv)
   //printf("Using pin #%d\n", gpioPin);
 
   if (!strcmp(argv[1], "on")) {
-  	printf("Setting pin LOW\n");
+  	printf("Setting pin %d LOW\n",gpioPin);
 	bcm2835_gpio_fsel(gpioPin, BCM2835_GPIO_FSEL_OUTP);
   	bcm2835_gpio_write(gpioPin, LOW);
   } else if (!strcmp(argv[1], "off")) {
-	printf("Setting pin HIGH\n");
+	printf("Setting pin %d HIGH\n",gpioPin);
   	bcm2835_gpio_fsel(gpioPin, BCM2835_GPIO_FSEL_OUTP);
   	bcm2835_gpio_write(gpioPin, HIGH);
   } else {  // state - get current state of the relay

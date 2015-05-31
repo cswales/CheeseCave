@@ -108,7 +108,7 @@ char    *g_sensor_name;
 char    *g_dir_name;
 char    g_delay;
 char    g_history_fn[255];
-char    g_stats_fn[255];
+char    g_state_fn[255];
 
 int init_sensor(void) {
 
@@ -236,7 +236,7 @@ int sample_sensor(void)
 
   fclose(fp);
 
-  // Also update the stats.yaml - and do the safe thing with writing to a temp then swapping the file
+  // Also update the state.json - and do the safe thing with writing to a temp then swapping the file
   // format: just sensor: sname\ntime: XXX .... as above
 
 	log_debug("writing stats file\n");
@@ -249,17 +249,17 @@ int sample_sensor(void)
     return(-1);
   }
 
-  fprintf(fp, "sensor: %s\n",g_sensor_name);
-  fprintf(fp, "time: %s\n",now_str);
-  fprintf(fp, "epoch: %d\n",now_time);
-  fprintf(fp, "temperature: %.1f\n",f);
-  fprintf(fp, "humidity: %.1f\n",h);
-  fprintf(fp, "celsius: %.1f\n",c);
+  fprintf(fp, "{\"sensor\": \"%s\",\n",g_sensor_name);
+  fprintf(fp, "\"time\": \"%s\",\n",now_str);
+  fprintf(fp, "\"epoch\": %d,\n",now_time);
+  fprintf(fp, "\"temperature\": %.1f,\n",f);
+  fprintf(fp, "\"humidity\": %.1f,\n",h);
+  fprintf(fp, "\"celsius\": %.1f }\n",c);
 
   fclose(fp);
 
   // mv to correct location
-  if (0 != rename(tmpName,g_stats_fn)) {
+  if (0 != rename(tmpName,g_state_fn)) {
     log_err( "could not move to output file %d\n",errno);
     return(-1);
   }
@@ -299,8 +299,8 @@ int validate_pin (int pin) {
 void usage(void) {
   fprintf(stderr, "usage:\n");
   fprintf(stderr, " out-dir sensor-name data-pin clock-pin secs-delay\n");
-  fprintf(stderr, "  the file 'sensor-name-history.yaml' will be updated,\n");
-  fprintf(stderr, "  and sensor-name-stats.yaml with just the current,\n");
+  fprintf(stderr, "  the file 'sensor-name-history.json' will be updated,\n");
+  fprintf(stderr, "  and sensor-name-state.json with just the current,\n");
   fprintf(stderr, "  and it happens every secs-delay seconds (although if we get a GPIO error\n");
 }
 
@@ -335,7 +335,7 @@ int main (int argc, char **argv)
 	}
 
 	snprintf(g_history_fn,sizeof(g_history_fn),"%s/%s-history.json",out_dir,g_sensor_name);
-	snprintf(g_stats_fn,sizeof(g_stats_fn),"%s/%s-stats.yaml",out_dir,g_sensor_name);
+	snprintf(g_state_fn,sizeof(g_state_fn),"%s/%s-state.json",out_dir,g_sensor_name);
 
 	// init the chip
 	if (!bcm2835_init()) {

@@ -233,7 +233,7 @@ int sample_sensor(void) {
 
   fclose(fp);
 
-  // Also update the stats.yaml - and do the safe thing with writing to a temp then swapping the file
+  // Also update the state.json - and do the safe thing with writing to a temp then swapping the file
   // format: just sensor: sname\ntime: XXX .... as above
 
   char tmpName[256];
@@ -244,12 +244,12 @@ int sample_sensor(void) {
     return(-1);
   }
 
-  fprintf(fp, "sensor: %s\n",g_sensor_name);
-  fprintf(fp, "time: %s\n",now_str);
-  fprintf(fp, "epoch: %d\n",now_time);
-  fprintf(fp, "temperature: %.1f\n",f);
-  fprintf(fp, "humidity: %.1f\n",h);
-  fprintf(fp, "celsius: %.1f\n",c);
+  fprintf(fp, "{\"sensor\": \"%s\",\n",g_sensor_name);
+  fprintf(fp, "\"time\": \"%s\",\n",now_str);
+  fprintf(fp, "\"epoch\": %d,\n",now_time);
+  fprintf(fp, "\"temperature\": %.1f,\n",f);
+  fprintf(fp, "\"humidity\": %.1f,\n",h);
+  fprintf(fp, "\"celsius\": %.1f }\n",c);
 
   fclose(fp);
 
@@ -293,7 +293,7 @@ void usage(void) {
   fprintf(stderr, "  out-dir sensor-name pin-number secs-delay \n");
 
   fprintf(stderr, "  the file 'sensor-name-history.json' will be updated,\n");
-  fprintf(stderr, "  and sensor-name-stats.yaml with just the current,\n");
+  fprintf(stderr, "  and sensor-name-state.yaml with just the current,\n");
   fprintf(stderr, "  and it happens every secs-delay seconds (although if we get a GPIO error\n");
   fprintf(stderr, "  we just skip a slot (assumes DHT22 but you can change #define\n");
 }
@@ -326,7 +326,7 @@ int main(int argc, char **argv)
   }
 
   snprintf(g_history_fn,sizeof(g_history_fn),"%s/%s-history.json",out_dir,g_sensor_name);
-  snprintf(g_stats_fn,sizeof(g_stats_fn),"%s/%s-stats.yaml",out_dir,g_sensor_name);
+  snprintf(g_stats_fn,sizeof(g_stats_fn),"%s/%s-state.yaml",out_dir,g_sensor_name);
 
   do {
 

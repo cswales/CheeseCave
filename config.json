@@ -1,0 +1,1 @@
+{"config": {"sleep_delay": 5, "humidity_pin": 22, "compressor_pin": 17, "temperature_delay": 30, "humidity_delay": 5}, "targets": {"temperature": 50, "humidity": 80}}
