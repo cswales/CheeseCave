@@ -147,7 +147,7 @@ while True:
 
 	# write the temp and humidity
 #	msg = 'TEMP: {0}\nCur {1:.1f}  Set {2:.1f}\n'.format( get_compressor_state(), sensors['temperature'], targets['temperature'] )
-	msg = 'TEMP: Cur {1:.1f}  \n{0} Set {2:.1f}   \n'.format( get_compressor_state(), sensors['temperature'], targets['temperature'] )
+	msg = 'TEMP:  Cur {1:.1f}  \n{0} Set {2:.1f}   \n'.format( get_compressor_state(), sensors['temperature'], targets['temperature'] )
 #	lcd.clear()
 	lcd.set_cursor(0,0)
 	lcd.message( msg )
@@ -157,8 +157,6 @@ while True:
 	lcd.set_cursor(0,0)
 	lcd.message( msg )
 	time.sleep(2.0)
-
-	# write the current command state
 
 	# write the last time updated
 
