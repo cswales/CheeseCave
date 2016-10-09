@@ -28,6 +28,16 @@ When you're logging into a remote machine, you've got three choices.
 
 3. User key access instead of passwords.
 
+## Using keys
+
+Create a key pair. There is a keypair checked in here - kind of like checking in a password.
+
+For the machine you will log into, append the public key to "authorized keys", in a particular user's .ssh directory.
+
+When you need to log in, use 'ssh -i <private key> user@host'
+
+That's about as simple as it gets, bob !
+
 ## Alerting
 
 Two methods of alerting are considered: email and SMS.
